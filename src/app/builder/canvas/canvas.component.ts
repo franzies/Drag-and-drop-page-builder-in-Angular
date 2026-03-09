@@ -11,7 +11,7 @@ import { MatIconModule } from '@angular/material/icon';
   template: `
     <div 
       #canvasContainer
-      class="w-full h-full min-h-[800px] bg-white relative outline-none"
+      class="w-full min-h-[800px] bg-white relative outline-none"
       (click)="onCanvasClick($event)"
       (keydown.enter)="onCanvasClick($event)"
       tabindex="0"

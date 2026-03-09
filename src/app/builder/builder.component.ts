@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -86,6 +86,36 @@ import { firstValueFrom } from 'rxjs';
             </button>
           </div>
 
+          <!-- Zoom & Pan Controls -->
+          <div class="flex items-center bg-gray-100 rounded-lg p-1 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 mx-2">
+            <button 
+              (click)="togglePanMode()" 
+              class="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-white dark:hover:bg-gray-700 dark:text-gray-400 transition-all"
+              [class.bg-white]="isPanMode"
+              [class.text-blue-600]="isPanMode"
+              [class.shadow-sm]="isPanMode"
+              title="Pan Tool"
+            >
+              <mat-icon class="text-sm">pan_tool</mat-icon>
+            </button>
+            <div class="w-px h-4 bg-gray-300 mx-1 dark:bg-gray-600"></div>
+            <button 
+              (click)="zoomOut()" 
+              class="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-white dark:hover:bg-gray-700 dark:text-gray-400 transition-all"
+              title="Zoom Out"
+            >
+              <mat-icon class="text-sm">remove</mat-icon>
+            </button>
+            <span class="text-xs font-medium px-2 text-gray-600 dark:text-gray-300 w-12 text-center">{{ zoomLevel }}%</span>
+            <button 
+              (click)="zoomIn()" 
+              class="p-1.5 rounded text-gray-500 hover:text-gray-700 hover:bg-white dark:hover:bg-gray-700 dark:text-gray-400 transition-all"
+              title="Zoom In"
+            >
+              <mat-icon class="text-sm">add</mat-icon>
+            </button>
+          </div>
+
           <div class="flex items-center space-x-2">
              <button (click)="toggleDarkMode()" class="p-2 hover:bg-gray-100 rounded-lg text-gray-600 dark:text-gray-300 dark:hover:bg-gray-700" title="Toggle Dark Mode">
               <mat-icon>{{ isDarkMode ? 'light_mode' : 'dark_mode' }}</mat-icon>
@@ -108,15 +138,28 @@ import { firstValueFrom } from 'rxjs';
 
         <!-- Canvas Area -->
         <div class="flex-1 overflow-hidden relative bg-gray-50 flex dark:bg-gray-800">
-          <div class="flex-1 overflow-auto p-8 flex justify-center bg-gray-100/50 dark:bg-gray-900/50" [class.p-0]="previewMode" [class.bg-white]="previewMode">
+          <div 
+            #scrollContainer
+            class="flex-1 overflow-auto p-8 flex justify-center bg-gray-100/50 dark:bg-gray-900/50" 
+            [class.p-0]="previewMode" 
+            [class.bg-white]="previewMode"
+            [class.cursor-grab]="isPanMode && !isDragging"
+            [class.cursor-grabbing]="isPanMode && isDragging"
+            (mousedown)="onPanStart($event)"
+            (mousemove)="onPanMove($event)"
+            (mouseup)="onPanEnd()"
+            (mouseleave)="onPanEnd()"
+          >
             <div 
-              class="transition-all duration-300 ease-in-out bg-white shadow-sm rounded-lg overflow-hidden dark:bg-black"
+              class="transition-all duration-300 ease-in-out bg-white shadow-sm rounded-lg dark:bg-black origin-top"
               [style.width]="getCanvasWidth()"
-              [style.height]="previewMode ? '100%' : 'min(100%, 800px)'"
+              [style.min-height]="previewMode ? '100%' : '800px'"
+              [style.transform]="'scale(' + (zoomLevel / 100) + ')'"
               [class.shadow-none]="previewMode" 
               [class.rounded-none]="previewMode"
+              [class.pointer-events-none]="isPanMode"
             >
-               <app-canvas class="w-full h-full block"></app-canvas>
+               <app-canvas class="w-full block"></app-canvas>
             </div>
           </div>
           
@@ -351,6 +394,8 @@ import { firstValueFrom } from 'rxjs';
   `]
 })
 export class BuilderComponent {
+  @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
+
   builderService = inject(BuilderService);
   pageService = inject(PageService);
   http = inject(HttpClient);
@@ -362,6 +407,15 @@ export class BuilderComponent {
   
   // Dark mode state
   isDarkMode = false;
+
+  // Zoom & Pan state
+  zoomLevel = 100;
+  isPanMode = false;
+  isDragging = false;
+  startX = 0;
+  startY = 0;
+  scrollLeft = 0;
+  scrollTop = 0;
 
   showNewPageModal = false;
   isCreatingPage = false;
@@ -421,6 +475,49 @@ export class BuilderComponent {
       case 'desktop': return '100%'; // or '1024px' or max-w-5xl
       default: return '100%';
     }
+  }
+
+  zoomIn() {
+    if (this.zoomLevel < 200) {
+      this.zoomLevel += 10;
+    }
+  }
+
+  zoomOut() {
+    if (this.zoomLevel > 30) {
+      this.zoomLevel -= 10;
+    }
+  }
+
+  togglePanMode() {
+    this.isPanMode = !this.isPanMode;
+    if (!this.isPanMode) {
+      this.isDragging = false;
+    }
+  }
+
+  onPanStart(event: MouseEvent) {
+    if (!this.isPanMode) return;
+    this.isDragging = true;
+    this.startX = event.pageX - this.scrollContainer.nativeElement.offsetLeft;
+    this.startY = event.pageY - this.scrollContainer.nativeElement.offsetTop;
+    this.scrollLeft = this.scrollContainer.nativeElement.scrollLeft;
+    this.scrollTop = this.scrollContainer.nativeElement.scrollTop;
+  }
+
+  onPanMove(event: MouseEvent) {
+    if (!this.isDragging || !this.isPanMode) return;
+    event.preventDefault();
+    const x = event.pageX - this.scrollContainer.nativeElement.offsetLeft;
+    const y = event.pageY - this.scrollContainer.nativeElement.offsetTop;
+    const walkX = (x - this.startX) * 1.5; // Scroll-fast
+    const walkY = (y - this.startY) * 1.5; // Scroll-fast
+    this.scrollContainer.nativeElement.scrollLeft = this.scrollLeft - walkX;
+    this.scrollContainer.nativeElement.scrollTop = this.scrollTop - walkY;
+  }
+
+  onPanEnd() {
+    this.isDragging = false;
   }
 
   async downloadZip() {
