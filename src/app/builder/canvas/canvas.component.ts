@@ -1,7 +1,8 @@
-import { Component, ElementRef, ViewChild, inject, AfterViewInit, Renderer2, effect, OnDestroy, PLATFORM_ID } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, AfterViewInit, Renderer2, effect, OnDestroy, PLATFORM_ID, computed } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { BuilderService } from '../builder.service';
+import { PageService } from '../page.service';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
@@ -74,6 +75,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvasContainer') canvasContainer!: ElementRef<HTMLDivElement>;
   
   builderService = inject(BuilderService);
+  pageService = inject(PageService);
   renderer = inject(Renderer2);
   platformId = inject(PLATFORM_ID);
   
@@ -90,7 +92,22 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
   private isInternalUpdate = false;
   private mutationObserver: MutationObserver | null = null;
 
+  currentAttachments = computed(() => {
+    const pageId = this.pageService.currentPageId();
+    if (!pageId) return [];
+    const page = this.pageService.pages().find(p => p.id === pageId);
+    return page?.attachments || [];
+  });
+
   constructor() {
+    // Effect to handle attachments injection
+    effect(() => {
+      const attachments = this.currentAttachments();
+      if (isPlatformBrowser(this.platformId) && this.canvasContainer) {
+        this.injectAttachments(attachments);
+      }
+    });
+
     // Effect to update canvas when HTML changes from outside (e.g. code editor)
     effect(() => {
       const html = this.builderService.htmlContent();
@@ -108,6 +125,8 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
          // Compare with current canvas content to avoid unnecessary updates
          if (currentClean !== bodyContent) {
              this.canvasContainer.nativeElement.innerHTML = bodyContent;
+             // Re-inject attachments since innerHTML wiped them out
+             this.injectAttachments(this.currentAttachments());
          }
       }
     });
@@ -198,6 +217,32 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     const parser = new DOMParser();
     const doc = parser.parseFromString(this.builderService.htmlContent(), 'text/html');
     this.canvasContainer.nativeElement.innerHTML = doc.body.innerHTML;
+    this.injectAttachments(this.currentAttachments());
+  }
+
+  injectAttachments(attachments: any[]) {
+    if (!this.canvasContainer || !isPlatformBrowser(this.platformId)) return;
+    
+    // Remove old injected attachments
+    const oldInjected = this.canvasContainer.nativeElement.querySelectorAll('.canvas-injected-attachment');
+    oldInjected.forEach(el => el.remove());
+    
+    // Inject new ones
+    attachments.forEach(att => {
+      if (att.type === 'css') {
+        const style = document.createElement('style');
+        style.className = 'canvas-injected-attachment';
+        style.id = `attachment-${att.id}`;
+        style.textContent = att.content;
+        this.canvasContainer.nativeElement.appendChild(style);
+      } else if (att.type === 'js') {
+        const script = document.createElement('script');
+        script.className = 'canvas-injected-attachment';
+        script.id = `attachment-${att.id}`;
+        script.textContent = att.content;
+        this.canvasContainer.nativeElement.appendChild(script);
+      }
+    });
   }
 
   getCleanHtml(el: HTMLElement): string {
@@ -208,6 +253,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     }
     clone.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
     clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    clone.querySelectorAll('.canvas-injected-attachment').forEach(el => el.remove());
     return clone.innerHTML;
   }
 
@@ -368,6 +414,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     if (selected) selected.classList.remove('selected-element');
     clone.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
     clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
+    clone.querySelectorAll('.canvas-injected-attachment').forEach(el => el.remove());
     
     this.builderService.updateBodyContent(clone.innerHTML);
   }

@@ -1,5 +1,12 @@
 import { Injectable, signal } from '@angular/core';
 
+export interface Attachment {
+  id: string;
+  name: string;
+  type: 'js' | 'css';
+  content: string;
+}
+
 export interface Page {
   id: string;
   name: string;
@@ -7,6 +14,7 @@ export interface Page {
   description: string;
   htmlContent: string;
   createdAt: Date;
+  attachments?: Attachment[];
 }
 
 @Injectable({
@@ -27,7 +35,8 @@ export class PageService {
           slug: 'index',
           description: 'The main landing page',
           htmlContent: '<div class="container mx-auto p-4"><h1>Home Page</h1><p>Welcome!</p></div>', 
-          createdAt: new Date() 
+          createdAt: new Date(),
+          attachments: []
         },
         { 
           id: '2', 
@@ -35,7 +44,8 @@ export class PageService {
           slug: 'about',
           description: 'Company information',
           htmlContent: '<div class="container mx-auto p-4"><h1>About Us</h1><p>We are a great team.</p></div>', 
-          createdAt: new Date() 
+          createdAt: new Date(),
+          attachments: []
         }
       ]);
       this.saveToStorage();
@@ -102,10 +112,76 @@ export class PageService {
     this.saveToStorage();
   }
 
+  getAttachments(pageId: string): Attachment[] {
+    const page = this.pages().find(p => p.id === pageId);
+    return page?.attachments || [];
+  }
+
   attachFile(pageId: string, fileData: { type: 'js' | 'css', name: string, content?: string, file?: File }) {
-    console.log('Mock REST call to save file to Mongo:', { pageId, ...fileData });
-    // In a real app, this would be:
-    // return this.http.post(`/api/pages/${pageId}/assets`, fileData);
-    return Promise.resolve({ success: true });
+    return new Promise<void>((resolve, reject) => {
+      const page = this.pages().find(p => p.id === pageId);
+      if (!page) {
+        reject('Page not found');
+        return;
+      }
+
+      const newAttachment: Attachment = {
+        id: Date.now().toString(),
+        name: fileData.name,
+        type: fileData.type,
+        content: fileData.content || ''
+      };
+
+      if (fileData.file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          newAttachment.content = e.target?.result as string;
+          this.saveAttachmentToPage(pageId, newAttachment);
+          resolve();
+        };
+        reader.onerror = () => reject('Failed to read file');
+        reader.readAsText(fileData.file);
+      } else {
+        this.saveAttachmentToPage(pageId, newAttachment);
+        resolve();
+      }
+    });
+  }
+
+  private saveAttachmentToPage(pageId: string, attachment: Attachment) {
+    this.pages.update(pages => pages.map(p => {
+      if (p.id === pageId) {
+        const attachments = p.attachments || [];
+        return { ...p, attachments: [...attachments, attachment] };
+      }
+      return p;
+    }));
+    this.saveToStorage();
+  }
+
+  updateAttachment(pageId: string, attachmentId: string, content: string) {
+    this.pages.update(pages => pages.map(p => {
+      if (p.id === pageId && p.attachments) {
+        return {
+          ...p,
+          attachments: p.attachments.map(a => a.id === attachmentId ? { ...a, content } : a)
+        };
+      }
+      return p;
+    }));
+    this.saveToStorage();
+  }
+
+  deleteAttachment(pageId: string, attachmentId: string) {
+    this.pages.update(pages => pages.map(p => {
+      if (p.id === pageId && p.attachments) {
+        return {
+          ...p,
+          attachments: p.attachments.filter(a => a.id !== attachmentId)
+        };
+      }
+      return p;
+    }));
+    this.saveToStorage();
   }
 }

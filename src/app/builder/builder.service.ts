@@ -134,4 +134,42 @@ export class BuilderService {
       // We rely on MutationObserver in CanvasComponent to update htmlContent
     }
   }
+
+  injectAttachment(id: string, type: 'js' | 'css', content: string) {
+    const currentHtml = this.htmlContent();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(currentHtml, 'text/html');
+    
+    let el = doc.getElementById(`attachment-${id}`);
+    
+    if (type === 'css') {
+      if (!el) {
+        el = doc.createElement('style');
+        el.id = `attachment-${id}`;
+        doc.head.appendChild(el);
+      }
+      el.textContent = content;
+    } else if (type === 'js') {
+      if (!el) {
+        el = doc.createElement('script');
+        el.id = `attachment-${id}`;
+        doc.body.appendChild(el);
+      }
+      el.textContent = content;
+    }
+    
+    this.htmlContent.set(`<!DOCTYPE html>\n${doc.documentElement.outerHTML}`);
+  }
+
+  removeAttachment(id: string) {
+    const currentHtml = this.htmlContent();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(currentHtml, 'text/html');
+    
+    const el = doc.getElementById(`attachment-${id}`);
+    if (el && el.parentElement) {
+      el.parentElement.removeChild(el);
+      this.htmlContent.set(`<!DOCTYPE html>\n${doc.documentElement.outerHTML}`);
+    }
+  }
 }

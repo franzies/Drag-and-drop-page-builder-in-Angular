@@ -8,12 +8,15 @@ import { PropertiesComponent } from './properties/properties.component';
 import { CodeEditorComponent } from './code-editor/code-editor.component';
 import { AiChatComponent } from './ai-chat/ai-chat.component';
 import { BuilderService } from './builder.service';
-import { PageService } from './page.service';
+import { PageService, Attachment } from './page.service';
 import { MatIconModule } from '@angular/material/icon';
 import { DragDropModule } from '@angular/cdk/drag-drop';
+import { CodemirrorModule } from '@ctrl/ngx-codemirror';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { firstValueFrom } from 'rxjs';
+import { isPlatformBrowser } from '@angular/common';
+import { PLATFORM_ID, OnInit } from '@angular/core';
 
 @Component({
   selector: 'app-builder',
@@ -27,7 +30,8 @@ import { firstValueFrom } from 'rxjs';
     CodeEditorComponent,
     AiChatComponent,
     MatIconModule,
-    DragDropModule
+    DragDropModule,
+    CodemirrorModule
   ],
   template: `
     <div class="flex h-screen bg-gray-100 overflow-hidden" cdkDropListGroup [class.dark]="isDarkMode">
@@ -279,107 +283,188 @@ import { firstValueFrom } from 'rxjs';
       <!-- Attach File Modal Overlay -->
       @if (showAttachModal) {
         <div class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div class="bg-white rounded-lg shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh] dark:bg-gray-800">
+          <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl overflow-hidden animate-in fade-in zoom-in duration-200 flex flex-col h-[80vh] dark:bg-gray-800">
             <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
-              <h3 class="font-semibold text-gray-800 dark:text-white">Attach Asset</h3>
+              <h3 class="font-semibold text-gray-800 dark:text-white">Manage Assets</h3>
               <button (click)="closeAttachModal()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <mat-icon>close</mat-icon>
               </button>
             </div>
             
-            <div class="flex border-b border-gray-200 dark:border-gray-600">
-              <button 
-                class="flex-1 py-2 text-sm font-medium text-center transition-colors"
-                [class.text-blue-600]="attachModalData.activeTab === 'create'"
-                [class.border-b-2]="attachModalData.activeTab === 'create'"
-                [class.border-blue-600]="attachModalData.activeTab === 'create'"
-                [class.text-gray-500]="attachModalData.activeTab !== 'create'"
-                [class.dark:text-blue-400]="attachModalData.activeTab === 'create'"
-                [class.dark:text-gray-400]="attachModalData.activeTab !== 'create'"
-                (click)="attachModalData.activeTab = 'create'"
-              >
-                Create New
-              </button>
-              <button 
-                class="flex-1 py-2 text-sm font-medium text-center transition-colors"
-                [class.text-blue-600]="attachModalData.activeTab === 'upload'"
-                [class.border-b-2]="attachModalData.activeTab === 'upload'"
-                [class.border-blue-600]="attachModalData.activeTab === 'upload'"
-                [class.text-gray-500]="attachModalData.activeTab !== 'upload'"
-                [class.dark:text-blue-400]="attachModalData.activeTab === 'upload'"
-                [class.dark:text-gray-400]="attachModalData.activeTab !== 'upload'"
-                (click)="attachModalData.activeTab = 'upload'"
-              >
-                Upload File
-              </button>
-            </div>
-
-            <div class="p-4 space-y-4 overflow-y-auto flex-1">
-              <!-- Common: File Type -->
-              <div>
-                <span class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">File Type</span>
-                <div class="flex gap-4">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="fileType" value="js" [(ngModel)]="attachModalData.fileType" class="text-blue-600 focus:ring-blue-500">
-                    <span class="text-sm text-gray-700 dark:text-gray-300">JavaScript (.js)</span>
-                  </label>
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="radio" name="fileType" value="css" [(ngModel)]="attachModalData.fileType" class="text-blue-600 focus:ring-blue-500">
-                    <span class="text-sm text-gray-700 dark:text-gray-300">CSS (.css)</span>
-                  </label>
+            <div class="flex flex-1 overflow-hidden">
+              <!-- Left Column: File List -->
+              <div class="w-1/3 border-r border-gray-200 dark:border-gray-600 flex flex-col bg-gray-50 dark:bg-gray-800">
+                <div class="p-3 border-b border-gray-200 dark:border-gray-600 flex gap-2">
+                  <button 
+                    class="flex-1 py-1.5 px-3 text-xs font-medium rounded-md transition-colors"
+                    [class.bg-blue-100]="attachModalData.activeTab === 'create'"
+                    [class.text-blue-700]="attachModalData.activeTab === 'create'"
+                    [class.bg-white]="attachModalData.activeTab !== 'create'"
+                    [class.text-gray-600]="attachModalData.activeTab !== 'create'"
+                    [class.border]="attachModalData.activeTab !== 'create'"
+                    [class.border-gray-300]="attachModalData.activeTab !== 'create'"
+                    [class.dark:bg-blue-900]="attachModalData.activeTab === 'create'"
+                    [class.dark:text-blue-300]="attachModalData.activeTab === 'create'"
+                    [class.dark:bg-gray-700]="attachModalData.activeTab !== 'create'"
+                    [class.dark:text-gray-300]="attachModalData.activeTab !== 'create'"
+                    [class.dark:border-gray-600]="attachModalData.activeTab !== 'create'"
+                    (click)="setAttachTab('create')"
+                  >
+                    <mat-icon class="text-[16px] w-4 h-4 align-middle mr-1">add</mat-icon> New
+                  </button>
+                  <button 
+                    class="flex-1 py-1.5 px-3 text-xs font-medium rounded-md transition-colors"
+                    [class.bg-blue-100]="attachModalData.activeTab === 'upload'"
+                    [class.text-blue-700]="attachModalData.activeTab === 'upload'"
+                    [class.bg-white]="attachModalData.activeTab !== 'upload'"
+                    [class.text-gray-600]="attachModalData.activeTab !== 'upload'"
+                    [class.border]="attachModalData.activeTab !== 'upload'"
+                    [class.border-gray-300]="attachModalData.activeTab !== 'upload'"
+                    [class.dark:bg-blue-900]="attachModalData.activeTab === 'upload'"
+                    [class.dark:text-blue-300]="attachModalData.activeTab === 'upload'"
+                    [class.dark:bg-gray-700]="attachModalData.activeTab !== 'upload'"
+                    [class.dark:text-gray-300]="attachModalData.activeTab !== 'upload'"
+                    [class.dark:border-gray-600]="attachModalData.activeTab !== 'upload'"
+                    (click)="setAttachTab('upload')"
+                  >
+                    <mat-icon class="text-[16px] w-4 h-4 align-middle mr-1">upload</mat-icon> Upload
+                  </button>
+                </div>
+                
+                <div class="flex-1 overflow-y-auto p-2 space-y-1">
+                  @if (pageAttachments.length === 0) {
+                    <div class="text-center p-4 text-sm text-gray-500 dark:text-gray-400 italic">
+                      No assets attached to this page.
+                    </div>
+                  }
+                  @for (attachment of pageAttachments; track attachment.id) {
+                    <div 
+                      class="flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors border"
+                      [class.bg-blue-50]="attachModalData.selectedAttachmentId === attachment.id"
+                      [class.border-blue-200]="attachModalData.selectedAttachmentId === attachment.id"
+                      [class.bg-white]="attachModalData.selectedAttachmentId !== attachment.id"
+                      [class.border-gray-200]="attachModalData.selectedAttachmentId !== attachment.id"
+                      [class.hover:bg-gray-100]="attachModalData.selectedAttachmentId !== attachment.id"
+                      [class.dark:bg-blue-900]="attachModalData.selectedAttachmentId === attachment.id"
+                      [class.dark:border-blue-700]="attachModalData.selectedAttachmentId === attachment.id"
+                      [class.dark:bg-gray-800]="attachModalData.selectedAttachmentId !== attachment.id"
+                      [class.dark:border-gray-700]="attachModalData.selectedAttachmentId !== attachment.id"
+                      [class.dark:hover:bg-gray-700]="attachModalData.selectedAttachmentId !== attachment.id"
+                      (click)="selectAttachment(attachment)"
+                    >
+                      <div class="flex items-center gap-2 overflow-hidden">
+                        <mat-icon class="text-gray-400 text-sm w-4 h-4">
+                          {{ attachment.type === 'js' ? 'javascript' : 'css' }}
+                        </mat-icon>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-200 truncate" [title]="attachment.name">
+                          {{ attachment.name }}
+                        </span>
+                      </div>
+                      <button 
+                        (click)="deleteAttachment(attachment.id); $event.stopPropagation()" 
+                        class="text-gray-400 hover:text-red-500 transition-colors p-1 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30"
+                        title="Delete asset"
+                      >
+                        <mat-icon class="text-[16px] w-4 h-4">delete</mat-icon>
+                      </button>
+                    </div>
+                  }
                 </div>
               </div>
 
-              @if (attachModalData.activeTab === 'create') {
-                <div>
-                  <label for="fileName" class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">File Name</label>
-                  <input 
-                    id="fileName"
-                    [(ngModel)]="attachModalData.fileName" 
-                    type="text" 
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="e.g. custom-script"
-                  >
-                  <span class="text-xs text-gray-400 mt-1 block">Extension .{{attachModalData.fileType}} will be added automatically</span>
+              <!-- Right Column: Editor / Uploader -->
+              <div class="w-2/3 flex flex-col bg-white dark:bg-gray-800">
+                <div class="p-4 space-y-4 overflow-y-auto flex-1">
+                  @if (attachModalData.activeTab === 'create' || attachModalData.activeTab === 'edit') {
+                    <!-- File Type (Only for Create) -->
+                    @if (attachModalData.activeTab === 'create') {
+                      <div>
+                        <span class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">File Type</span>
+                        <div class="flex gap-4">
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="fileType" value="js" [(ngModel)]="attachModalData.fileType" class="text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">JavaScript (.js)</span>
+                          </label>
+                          <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="fileType" value="css" [(ngModel)]="attachModalData.fileType" class="text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">CSS (.css)</span>
+                          </label>
+                        </div>
+                      </div>
+                    }
+
+                    <div>
+                      <label for="fileName" class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">File Name</label>
+                      <input 
+                        id="fileName"
+                        [(ngModel)]="attachModalData.fileName" 
+                        type="text" 
+                        [disabled]="attachModalData.activeTab === 'edit'"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none disabled:bg-gray-100 disabled:text-gray-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:disabled:bg-gray-600"
+                        placeholder="e.g. custom-script"
+                      >
+                      @if (attachModalData.activeTab === 'create') {
+                        <span class="text-xs text-gray-400 mt-1 block">Extension .{{attachModalData.fileType}} will be added automatically</span>
+                      }
+                    </div>
+                    
+                    <div class="flex-1 flex flex-col min-h-[300px] h-full border border-gray-300 rounded-md overflow-hidden dark:border-gray-600">
+                      <div class="px-3 py-2 bg-gray-50 border-b border-gray-300 dark:bg-gray-700 dark:border-gray-600">
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">Code Content</label>
+                      </div>
+                      <ngx-codemirror 
+                        class="flex-1 overflow-hidden codemirror-wrapper"
+                        [(ngModel)]="attachModalData.fileContent" 
+                        [options]="{
+                          lineNumbers: true,
+                          theme: 'dracula',
+                          mode: attachModalData.fileType === 'js' ? 'javascript' : 'css'
+                        }"
+                      ></ngx-codemirror>
+                    </div>
+                  }
+
+                  @if (attachModalData.activeTab === 'upload') {
+                    <div>
+                      <span class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">File Type</span>
+                      <div class="flex gap-4 mb-4">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name="fileType" value="js" [(ngModel)]="attachModalData.fileType" class="text-blue-600 focus:ring-blue-500">
+                          <span class="text-sm text-gray-700 dark:text-gray-300">JavaScript (.js)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                          <input type="radio" name="fileType" value="css" [(ngModel)]="attachModalData.fileType" class="text-blue-600 focus:ring-blue-500">
+                          <span class="text-sm text-gray-700 dark:text-gray-300">CSS (.css)</span>
+                        </label>
+                      </div>
+                    </div>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:bg-gray-50 transition-colors cursor-pointer relative dark:border-gray-600 dark:hover:bg-gray-700 mt-4">
+                      <input 
+                        type="file" 
+                        (change)="onFileSelected($event)" 
+                        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                        [accept]="attachModalData.fileType === 'js' ? '.js' : '.css'"
+                      >
+                      <mat-icon class="text-gray-400 text-5xl mb-4">cloud_upload</mat-icon>
+                      <p class="text-base text-gray-600 font-medium dark:text-gray-300">Click to upload or drag and drop</p>
+                      <p class="text-sm text-gray-400 mt-2">
+                        {{ attachModalData.selectedFile ? attachModalData.selectedFile.name : 'Supported: .' + attachModalData.fileType }}
+                      </p>
+                    </div>
+                  }
                 </div>
                 
-                <div class="flex-1 flex flex-col min-h-[200px]">
-                  <label for="fileContent" class="block text-xs font-medium text-gray-700 mb-1 dark:text-gray-300">Code Content</label>
-                  <textarea 
-                    id="fileContent"
-                    [(ngModel)]="attachModalData.fileContent" 
-                    class="w-full flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm font-mono focus:ring-2 focus:ring-blue-500 outline-none resize-none dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                    placeholder="// Write your code here..."
-                  ></textarea>
-                </div>
-              }
-
-              @if (attachModalData.activeTab === 'upload') {
-                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:bg-gray-50 transition-colors cursor-pointer relative dark:border-gray-600 dark:hover:bg-gray-700">
-                  <input 
-                    type="file" 
-                    (change)="onFileSelected($event)" 
-                    class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                    [accept]="attachModalData.fileType === 'js' ? '.js' : '.css'"
+                <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 dark:bg-gray-700 dark:border-gray-600">
+                  <button (click)="closeAttachModal()" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium dark:text-gray-300 dark:hover:text-white">Close</button>
+                  <button 
+                    (click)="saveAttachment()" 
+                    [disabled]="!isValidAttachment()"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
-                  <mat-icon class="text-gray-400 text-4xl mb-2">cloud_upload</mat-icon>
-                  <p class="text-sm text-gray-600 font-medium dark:text-gray-300">Click to upload or drag and drop</p>
-                  <p class="text-xs text-gray-400 mt-1">
-                    {{ attachModalData.selectedFile ? attachModalData.selectedFile.name : 'Supported: .' + attachModalData.fileType }}
-                  </p>
+                    <mat-icon class="text-sm">save</mat-icon> {{ attachModalData.activeTab === 'edit' ? 'Update Asset' : 'Save Asset' }}
+                  </button>
                 </div>
-              }
-            </div>
-            
-            <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-2 dark:bg-gray-700 dark:border-gray-600">
-              <button (click)="closeAttachModal()" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium dark:text-gray-300 dark:hover:text-white">Cancel</button>
-              <button 
-                (click)="saveAttachment()" 
-                [disabled]="!isValidAttachment()"
-                class="px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              >
-                <mat-icon class="text-sm">save</mat-icon> Save Asset
-              </button>
+              </div>
             </div>
           </div>
         </div>
@@ -391,16 +476,37 @@ import { firstValueFrom } from 'rxjs';
       display: block;
       height: 100vh;
     }
+    ::ng-deep .codemirror-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    ::ng-deep .codemirror-wrapper .CodeMirror {
+      flex: 1;
+      height: 100%;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 14px;
+    }
   `]
 })
-export class BuilderComponent {
+export class BuilderComponent implements OnInit {
   @ViewChild('scrollContainer') scrollContainer!: ElementRef<HTMLDivElement>;
 
   builderService = inject(BuilderService);
   pageService = inject(PageService);
   http = inject(HttpClient);
+  platformId = inject(PLATFORM_ID);
   
   previewMode = false;
+  
+  ngOnInit() {
+    if (isPlatformBrowser(this.platformId)) {
+      // @ts-ignore
+      import('codemirror/mode/javascript/javascript');
+      // @ts-ignore
+      import('codemirror/mode/css/css');
+    }
+  }
   
   // Breakpoint state
   currentBreakpoint: 'mobile' | 'tablet' | 'desktop' = 'desktop';
@@ -436,14 +542,24 @@ export class BuilderComponent {
   ];
 
   showAttachModal = false;
-  attachModalData = {
+  attachModalData: {
+    pageId: string;
+    activeTab: 'create' | 'upload' | 'edit';
+    fileType: 'js' | 'css';
+    fileName: string;
+    fileContent: string;
+    selectedFile: File | null;
+    selectedAttachmentId: string | null;
+  } = {
     pageId: '',
-    activeTab: 'create' as 'create' | 'upload',
-    fileType: 'js' as 'js' | 'css',
+    activeTab: 'create',
+    fileType: 'js',
     fileName: '',
     fileContent: '',
-    selectedFile: null as File | null
+    selectedFile: null,
+    selectedAttachmentId: null
   };
+  pageAttachments: Attachment[] = [];
 
   togglePreview() {
     this.previewMode = !this.previewMode;
@@ -630,19 +746,49 @@ export class BuilderComponent {
   }
 
   openAttachModal(pageId: string) {
+    this.pageAttachments = this.pageService.getAttachments(pageId);
     this.attachModalData = {
       pageId,
       activeTab: 'create',
       fileType: 'js',
       fileName: '',
       fileContent: '',
-      selectedFile: null
+      selectedFile: null,
+      selectedAttachmentId: null
     };
     this.showAttachModal = true;
   }
 
   closeAttachModal() {
     this.showAttachModal = false;
+  }
+
+  setAttachTab(tab: 'create' | 'upload') {
+    this.attachModalData.activeTab = tab;
+    this.attachModalData.selectedAttachmentId = null;
+    this.attachModalData.fileName = '';
+    this.attachModalData.fileContent = '';
+    this.attachModalData.selectedFile = null;
+  }
+
+  selectAttachment(attachment: Attachment) {
+    this.attachModalData.activeTab = 'edit';
+    this.attachModalData.selectedAttachmentId = attachment.id;
+    this.attachModalData.fileType = attachment.type;
+    // Remove extension from filename for display if it's there
+    const nameWithoutExt = attachment.name.replace(/\.(js|css)$/, '');
+    this.attachModalData.fileName = nameWithoutExt;
+    this.attachModalData.fileContent = attachment.content;
+  }
+
+  deleteAttachment(attachmentId: string) {
+    if (confirm('Are you sure you want to delete this asset?')) {
+      this.pageService.deleteAttachment(this.attachModalData.pageId, attachmentId);
+      this.pageAttachments = this.pageService.getAttachments(this.attachModalData.pageId);
+      if (this.attachModalData.selectedAttachmentId === attachmentId) {
+        this.setAttachTab('create');
+      }
+    }
   }
 
   onFileSelected(event: Event) {
@@ -655,25 +801,36 @@ export class BuilderComponent {
   isValidAttachment(): boolean {
     if (this.attachModalData.activeTab === 'create') {
       return !!this.attachModalData.fileName && !!this.attachModalData.fileContent;
+    } else if (this.attachModalData.activeTab === 'edit') {
+      return !!this.attachModalData.fileContent;
     } else {
       return !!this.attachModalData.selectedFile;
     }
   }
 
   saveAttachment() {
-    const { pageId, activeTab, fileType, fileName, fileContent, selectedFile } = this.attachModalData;
+    const { pageId, activeTab, fileType, fileName, fileContent, selectedFile, selectedAttachmentId } = this.attachModalData;
     
-    // Construct the payload
-    const payload = {
-      type: fileType,
-      name: activeTab === 'create' ? `${fileName}.${fileType}` : selectedFile!.name,
-      content: activeTab === 'create' ? fileContent : undefined,
-      file: activeTab === 'upload' ? selectedFile! : undefined
-    };
+    if (activeTab === 'edit' && selectedAttachmentId) {
+      this.pageService.updateAttachment(pageId, selectedAttachmentId, fileContent);
+      this.pageAttachments = this.pageService.getAttachments(pageId);
+      alert('Asset updated successfully!');
+    } else {
+      // Construct the payload
+      const payload = {
+        type: fileType,
+        name: activeTab === 'create' ? `${fileName}.${fileType}` : selectedFile!.name,
+        content: activeTab === 'create' ? fileContent : undefined,
+        file: activeTab === 'upload' ? selectedFile! : undefined
+      };
 
-    this.pageService.attachFile(pageId, payload).then(() => {
-      alert('File attached successfully!');
-      this.closeAttachModal();
-    });
+      this.pageService.attachFile(pageId, payload).then(() => {
+        this.pageAttachments = this.pageService.getAttachments(pageId);
+        alert('Asset attached successfully!');
+        if (activeTab === 'create' || activeTab === 'upload') {
+          this.setAttachTab('create');
+        }
+      });
+    }
   }
 }
