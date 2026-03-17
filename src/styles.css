@@ -2,5 +2,7 @@
 @import url('https://fonts.googleapis.com/icon?family=Material+Icons');
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @import "codemirror/lib/codemirror.css";
 @import "codemirror/theme/dracula.css";
