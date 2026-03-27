@@ -369,6 +369,8 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
                       [class.dark:border-gray-700]="attachModalData.selectedAttachmentId !== attachment.id"
                       [class.dark:hover:bg-gray-700]="attachModalData.selectedAttachmentId !== attachment.id"
                       (click)="selectAttachment(attachment)"
+                      (keydown.enter)="selectAttachment(attachment)"
+                      tabindex="0"
                     >
                       <div class="flex items-center gap-2 overflow-hidden">
                         <mat-icon class="text-gray-400 text-sm w-4 h-4">
@@ -428,7 +430,7 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
                     
                     <div class="flex-1 flex flex-col min-h-[300px] h-full border border-gray-300 rounded-md overflow-hidden dark:border-gray-600">
                       <div class="px-3 py-2 bg-gray-50 border-b border-gray-300 dark:bg-gray-700 dark:border-gray-600">
-                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300">Code Content</label>
+                        <span class="block text-xs font-medium text-gray-700 dark:text-gray-300">Code Content</span>
                       </div>
                       <ngx-codemirror 
                         class="flex-1 overflow-hidden codemirror-wrapper"

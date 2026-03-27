@@ -334,14 +334,14 @@ interface NavigatorNode {
                   </div>
                 </div>
                 <div>
-                  <label class="block">
+                  <div class="block">
                     <span class="text-xs text-gray-500 mb-1 block">Text Align</span>
                     <div class="flex rounded-md shadow-sm">
                       <button (click)="updateStyle('textAlign', 'left')" class="flex-1 px-2 py-1.5 text-xs font-medium border border-gray-300 rounded-l-md hover:bg-gray-50" [class.bg-blue-50]="el.style.textAlign === 'left'" [class.text-blue-600]="el.style.textAlign === 'left'">Left</button>
                       <button (click)="updateStyle('textAlign', 'center')" class="flex-1 px-2 py-1.5 text-xs font-medium border-t border-b border-gray-300 hover:bg-gray-50" [class.bg-blue-50]="el.style.textAlign === 'center'" [class.text-blue-600]="el.style.textAlign === 'center'">Center</button>
                       <button (click)="updateStyle('textAlign', 'right')" class="flex-1 px-2 py-1.5 text-xs font-medium border border-gray-300 rounded-r-md hover:bg-gray-50" [class.bg-blue-50]="el.style.textAlign === 'right'" [class.text-blue-600]="el.style.textAlign === 'right'">Right</button>
                     </div>
-                  </label>
+                  </div>
                 </div>
                 <div>
                   <label class="block">
