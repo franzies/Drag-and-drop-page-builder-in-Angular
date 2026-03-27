@@ -1,4 +1,4 @@
-import { Component, inject, ViewChild, ElementRef } from '@angular/core';
+import { Component, inject, ViewChild, ElementRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -34,13 +34,21 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
     CodemirrorModule
   ],
   template: `
-    <div class="flex h-screen bg-gray-100 overflow-hidden" cdkDropListGroup [class.dark]="isDarkMode">
+    <div class="flex h-screen bg-gray-100 overflow-hidden" cdkDropListGroup [class.dark]="isDarkMode" [class.select-none]="isResizingSidebar || isResizingRightPanel">
       <!-- Sidebar -->
       <app-sidebar 
-        class="w-64 bg-white border-r border-gray-200 flex-shrink-0 dark:bg-gray-900 dark:border-gray-700"
+        class="bg-white border-r border-gray-200 flex-shrink-0 dark:bg-gray-900 dark:border-gray-700"
+        [style.width.px]="sidebarWidth"
         (requestCreatePage)="openNewPageModal()"
         (requestAttachFile)="openAttachModal($event)"
       ></app-sidebar>
+
+      <!-- Sidebar Resizer -->
+      <div 
+        class="w-1 cursor-col-resize bg-gray-200 hover:bg-blue-500 z-20 dark:bg-gray-700 dark:hover:bg-blue-500 transition-colors"
+        [class.bg-blue-500]="isResizingSidebar"
+        (mousedown)="startResizeSidebar($event)"
+      ></div>
 
       <!-- Main Content -->
       <div class="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-gray-800">
@@ -149,6 +157,7 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
             [class.bg-white]="previewMode"
             [class.cursor-grab]="isPanMode && !isDragging"
             [class.cursor-grabbing]="isPanMode && isDragging"
+            [class.pointer-events-none]="isResizingSidebar || isResizingRightPanel"
             (mousedown)="onPanStart($event)"
             (mousemove)="onPanMove($event)"
             (mouseup)="onPanEnd()"
@@ -174,7 +183,16 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
 
           <!-- Right Panel (Properties + AI Chat) -->
           @if (!previewMode) {
-            <div class="w-80 bg-white border-l border-gray-200 flex flex-col flex-shrink-0 z-10 dark:bg-gray-900 dark:border-gray-700">
+            <!-- Right Panel Resizer -->
+            <div 
+              class="w-1 cursor-col-resize bg-gray-200 hover:bg-blue-500 z-20 dark:bg-gray-700 dark:hover:bg-blue-500 transition-colors"
+              [class.bg-blue-500]="isResizingRightPanel"
+              (mousedown)="startResizeRightPanel($event)"
+            ></div>
+            <div 
+              class="bg-white border-l border-gray-200 flex flex-col flex-shrink-0 z-10 dark:bg-gray-900 dark:border-gray-700"
+              [style.width.px]="rightPanelWidth"
+            >
               <app-properties class="flex-1 overflow-hidden border-b border-gray-200 dark:border-gray-700"></app-properties>
               <app-ai-chat class="h-[40%] flex-shrink-0"></app-ai-chat>
             </div>
@@ -501,13 +519,45 @@ export class BuilderComponent implements OnInit {
   
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
-      // @ts-ignore
+      // @ts-expect-error - CodeMirror mode imports do not have type definitions
       import('codemirror/mode/javascript/javascript');
-      // @ts-ignore
+      // @ts-expect-error - CodeMirror mode imports do not have type definitions
       import('codemirror/mode/css/css');
     }
   }
   
+  // Resizing state
+  sidebarWidth = 256; // 16rem (w-64)
+  rightPanelWidth = 320; // 20rem (w-80)
+  isResizingSidebar = false;
+  isResizingRightPanel = false;
+
+  startResizeSidebar(event: MouseEvent) {
+    event.preventDefault();
+    this.isResizingSidebar = true;
+  }
+
+  startResizeRightPanel(event: MouseEvent) {
+    event.preventDefault();
+    this.isResizingRightPanel = true;
+  }
+
+  @HostListener('window:mousemove', ['$event'])
+  onMouseMove(event: MouseEvent) {
+    if (this.isResizingSidebar) {
+      this.sidebarWidth = Math.max(200, Math.min(event.clientX, 600));
+    } else if (this.isResizingRightPanel) {
+      const newWidth = window.innerWidth - event.clientX;
+      this.rightPanelWidth = Math.max(250, Math.min(newWidth, 800));
+    }
+  }
+
+  @HostListener('window:mouseup')
+  onMouseUp() {
+    this.isResizingSidebar = false;
+    this.isResizingRightPanel = false;
+  }
+
   // Breakpoint state
   currentBreakpoint: 'mobile' | 'tablet' | 'desktop' = 'desktop';
   

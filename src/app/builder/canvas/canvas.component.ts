@@ -2,7 +2,7 @@ import { Component, ElementRef, ViewChild, inject, AfterViewInit, Renderer2, eff
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { BuilderService } from '../builder.service';
-import { PageService } from '../page.service';
+import { PageService, Attachment } from '../page.service';
 import { MatIconModule } from '@angular/material/icon';
 
 @Component({
@@ -220,7 +220,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     this.injectAttachments(this.currentAttachments());
   }
 
-  injectAttachments(attachments: any[]) {
+  injectAttachments(attachments: Attachment[]) {
     if (!this.canvasContainer || !isPlatformBrowser(this.platformId)) return;
     
     // Remove old injected attachments
