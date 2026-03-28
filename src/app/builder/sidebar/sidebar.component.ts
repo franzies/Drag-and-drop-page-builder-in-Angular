@@ -277,6 +277,27 @@ export class SidebarComponent {
       ]
     },
     {
+      name: 'Interactive',
+      expanded: false,
+      items: [
+        { name: 'Accordion', icon: 'view_day', html: '<div class="w-full border border-gray-200 rounded-lg overflow-hidden"><details class="group border-b border-gray-200 last:border-0"><summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 bg-gray-50 hover:bg-gray-100 transition-colors"><span>Accordion Item 1</span><span class="transition group-open:rotate-180"><svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg></span></summary><div class="p-4 text-gray-600 bg-white"><p>Content for accordion item 1.</p></div></details><details class="group border-b border-gray-200 last:border-0"><summary class="flex justify-between items-center font-medium cursor-pointer list-none p-4 bg-gray-50 hover:bg-gray-100 transition-colors"><span>Accordion Item 2</span><span class="transition group-open:rotate-180"><svg fill="none" height="24" shape-rendering="geometricPrecision" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" width="24"><path d="M6 9l6 6 6-6"></path></svg></span></summary><div class="p-4 text-gray-600 bg-white"><p>Content for accordion item 2.</p></div></details></div>', category: 'Interactive' },
+        { name: 'Tabs', icon: 'tab', html: '<div class="w-full"><div class="flex border-b border-gray-200"><button class="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 focus:outline-none">Tab 1</button><button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none">Tab 2</button><button class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 focus:outline-none">Tab 3</button></div><div class="p-4 bg-white border border-t-0 border-gray-200"><div class="block"><p class="text-gray-600">Content for Tab 1</p></div></div></div>', category: 'Interactive' }
+      ]
+    },
+    {
+      name: 'Social',
+      expanded: false,
+      items: [
+        { name: 'Social Icon', icon: 'thumb_up', html: '<a href="#" class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 transition-colors"><svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path fill-rule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clip-rule="evenodd"></path></svg></a>', category: 'Social' },
+        { name: 'Twitter Embed', icon: 'chat', html: '<blockquote class="twitter-tweet"><p lang="en" dir="ltr">Just setting up my twttr</p>&mdash; jack (@jack) <a href="https://twitter.com/jack/status/20?ref_src=twsrc%5Etfw">March 21, 2006</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>', category: 'Social' },
+        { name: 'YouTube Embed', icon: 'play_circle_filled', html: '<div class="aspect-w-16 aspect-h-9"><iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen class="w-full h-64 rounded-lg shadow-md"></iframe></div>', category: 'Social' },
+        { name: 'Instagram Embed', icon: 'photo_camera', html: '<blockquote class="instagram-media" data-instgrm-permalink="https://www.instagram.com/p/C-000000000/?utm_source=ig_embed&amp;utm_campaign=loading" data-instgrm-version="14" style=" background:#FFF; border:0; border-radius:3px; box-shadow:0 0 1px 0 rgba(0,0,0,0.5),0 1px 10px 0 rgba(0,0,0,0.15); margin: 1px; max-width:540px; min-width:326px; padding:0; width:99.375%; width:-webkit-calc(100% - 2px); width:calc(100% - 2px);"></blockquote> <script async src="//www.instagram.com/embed.js"></script>', category: 'Social' },
+        { name: 'Facebook Embed', icon: 'facebook', html: '<div class="fb-post" data-href="https://www.facebook.com/20531316728/posts/10154009990506729/" data-width="500" data-show-text="true"></div><script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v17.0" nonce="12345"></script>', category: 'Social' },
+        { name: 'LinkedIn Embed', icon: 'work', html: '<iframe src="https://www.linkedin.com/embed/feed/update/urn:li:share:6900000000000000000" height="282" width="504" frameborder="0" allowfullscreen="" title="Embedded post" class="rounded-lg shadow-md border border-gray-200"></iframe>', category: 'Social' },
+        { name: 'Spotify Embed', icon: 'music_note', html: '<iframe style="border-radius:12px" src="https://open.spotify.com/embed/track/4cOdK2wGLETKBW3PvgPWqT?utm_source=generator" width="100%" height="152" frameBorder="0" allowfullscreen="" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>', category: 'Social' }
+      ]
+    },
+    {
       name: 'Charts',
       expanded: true,
       items: [

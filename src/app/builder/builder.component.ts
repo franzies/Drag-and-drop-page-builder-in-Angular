@@ -587,6 +587,7 @@ export class BuilderComponent implements OnInit {
 
   templates = [
     { id: 'blank', name: 'Blank Page', description: 'Start from scratch with an empty canvas', icon: 'check_box_outline_blank', file: null },
+    { id: 'landing', name: 'Landing Page', description: 'A full landing page with hero, features, and CTA', icon: 'web', file: '/templates/landing.html' },
     { id: 'teaserlist', name: 'Teaser List', description: 'A list of article teasers with images', icon: 'view_list', file: '/templates/teaserlist.html' },
     { id: 'fullcontent', name: 'Full Content', description: 'A full article page with cover image', icon: 'article', file: '/templates/fullcontent.html' },
     { id: 'mappreview', name: 'Map Preview', description: 'Contact page with embedded map', icon: 'map', file: '/templates/mappreview.html' },
