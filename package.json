@@ -26,6 +26,7 @@
     "@ctrl/ngx-codemirror": "^7.0.0",
     "@google/genai": "^1.27.0",
     "@types/prismjs": "^1.26.6",
+    "chart.js": "^4.5.1",
     "codemirror": "^5.65.21",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",

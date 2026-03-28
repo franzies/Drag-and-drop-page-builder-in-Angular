@@ -4,6 +4,7 @@ import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
 import { BuilderService } from '../builder.service';
 import { PageService, Attachment } from '../page.service';
 import { MatIconModule } from '@angular/material/icon';
+import Chart from 'chart.js/auto';
 
 @Component({
   selector: 'app-canvas',
@@ -127,6 +128,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
              this.canvasContainer.nativeElement.innerHTML = bodyContent;
              // Re-inject attachments since innerHTML wiped them out
              this.injectAttachments(this.currentAttachments());
+             this.renderCharts();
          }
       }
     });
@@ -190,6 +192,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
         if (this.builderService.showCodeEditor()) return;
 
         if (this.canvasContainer) {
+          this.renderCharts();
           this.isInternalUpdate = true;
           const cleanHtml = this.getCleanHtml(this.canvasContainer.nativeElement);
           this.builderService.updateBodyContent(cleanHtml);
@@ -218,6 +221,7 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     const doc = parser.parseFromString(this.builderService.htmlContent(), 'text/html');
     this.canvasContainer.nativeElement.innerHTML = doc.body.innerHTML;
     this.injectAttachments(this.currentAttachments());
+    this.renderCharts();
   }
 
   injectAttachments(attachments: Attachment[]) {
@@ -254,6 +258,8 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     clone.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
     clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
     clone.querySelectorAll('.canvas-injected-attachment').forEach(el => el.remove());
+    // Remove rendered hash so it re-renders on load
+    clone.querySelectorAll('[data-rendered-hash]').forEach(el => el.removeAttribute('data-rendered-hash'));
     return clone.innerHTML;
   }
 
@@ -265,7 +271,13 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
     
-    const target = event.target as HTMLElement;
+    let target = event.target as HTMLElement;
+    
+    // If clicking inside a chart, select the chart container instead
+    const chartContainer = target.closest('[data-component-chart="true"], [data-component-dymer-chart="true"]');
+    if (chartContainer) {
+      target = chartContainer as HTMLElement;
+    }
     
     // Don't select the container itself if possible, unless it's empty
     if (target === this.canvasContainer.nativeElement) {
@@ -415,7 +427,225 @@ export class CanvasComponent implements AfterViewInit, OnDestroy {
     clone.querySelectorAll('.drop-target').forEach(el => el.classList.remove('drop-target'));
     clone.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
     clone.querySelectorAll('.canvas-injected-attachment').forEach(el => el.remove());
+    // Remove rendered hash so it re-renders on load
+    clone.querySelectorAll('[data-rendered-hash]').forEach(el => el.removeAttribute('data-rendered-hash'));
     
     this.builderService.updateBodyContent(clone.innerHTML);
+  }
+
+  renderCharts() {
+    if (!this.canvasContainer || !isPlatformBrowser(this.platformId)) return;
+    
+    const dymerCharts = this.canvasContainer.nativeElement.querySelectorAll('[data-component-dymer-chart="true"]');
+    dymerCharts.forEach((chartEl: Element) => {
+      const el = chartEl as HTMLElement;
+      const type = el.getAttribute('data-chart-type');
+      const dataSource = el.getAttribute('data-datasource');
+      const labelField = el.getAttribute('data-label-field');
+      const valueField = el.getAttribute('data-value-field');
+      const title = el.getAttribute('data-title') || 'Services benchmark';
+      
+      const configHash = `${type}|${dataSource}|${labelField}|${valueField}|${title}`;
+      if (el.getAttribute('data-rendered-hash') === configHash) {
+        return;
+      }
+      
+      el.setAttribute('data-rendered-hash', configHash);
+      
+      if (type === 'horizontal-bar') {
+        this.renderDymerHorizontalBar(el, dataSource, labelField, valueField, title);
+      }
+    });
+
+    const standardCharts = this.canvasContainer.nativeElement.querySelectorAll('[data-component-chart="true"]');
+    standardCharts.forEach((chartEl: Element) => {
+      const el = chartEl as HTMLElement;
+      const type = el.getAttribute('data-chart-type') || 'bar';
+      const dataSource = el.getAttribute('data-datasource');
+      const labelField = el.getAttribute('data-label-field');
+      const valueField = el.getAttribute('data-value-field');
+      
+      const configHash = `chartjs|${type}|${dataSource}|${labelField}|${valueField}`;
+      if (el.getAttribute('data-rendered-hash') === configHash) {
+        return;
+      }
+      
+      el.setAttribute('data-rendered-hash', configHash);
+      this.renderChartJs(el, type, dataSource, labelField, valueField);
+    });
+  }
+
+  async renderChartJs(el: HTMLElement, type: string, dataSource: string | null, labelField: string | null, valueField: string | null) {
+    let canvas = el.querySelector('canvas');
+    if (!canvas) {
+      canvas = document.createElement('canvas');
+      el.insertBefore(canvas, el.firstChild);
+    }
+    
+    // Destroy existing chart instance if any
+    const existingChart = Chart.getChart(canvas);
+    if (existingChart) {
+      existingChart.destroy();
+    }
+
+    if (!dataSource || !labelField) {
+      return;
+    }
+
+    try {
+      const response = await fetch(dataSource);
+      const data = await response.json();
+      const items = Array.isArray(data) ? data : (data.features || data.data || data.items || []);
+      
+      const resolvePath = (obj: Record<string, unknown>, path: string) => {
+        return path.split('.').reduce((prev: unknown, curr: string) => {
+          if (prev && typeof prev === 'object' && curr in prev) {
+            return (prev as Record<string, unknown>)[curr];
+          }
+          return undefined;
+        }, obj);
+      };
+      
+      const aggregates: Record<string, number> = {};
+      items.forEach((item: Record<string, unknown>) => {
+        const rawLabel = resolvePath(item, labelField);
+        const label = rawLabel !== undefined && rawLabel !== null ? String(rawLabel) : 'Unknown';
+        let value = 1;
+        if (valueField) {
+          const rawValue = resolvePath(item, valueField);
+          value = Number(rawValue) || 0;
+        }
+        aggregates[label] = (aggregates[label] || 0) + value;
+      });
+
+      const chartType = type === 'gauge' ? 'doughnut' : type;
+      const options: Record<string, unknown> = {
+        responsive: true,
+        maintainAspectRatio: false,
+      };
+
+      if (type === 'gauge') {
+        options['circumference'] = 180;
+        options['rotation'] = -90;
+      }
+
+      new Chart(canvas, {
+        type: chartType as 'bar' | 'line' | 'pie' | 'doughnut',
+        data: {
+          labels: Object.keys(aggregates),
+          datasets: [{
+            label: 'Dataset',
+            data: Object.values(aggregates),
+            borderWidth: 1
+          }]
+        },
+        options
+      });
+      
+    } catch (error) {
+      console.error('Error rendering Chart.js:', error);
+    }
+  }
+
+  async renderDymerHorizontalBar(el: HTMLElement, dataSource: string | null, labelField: string | null, valueField: string | null, title: string) {
+    if (!dataSource || !labelField) {
+      el.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-bold text-gray-900 m-0">${title}</h3>
+          <span class="bg-blue-50 text-blue-700 text-sm font-medium px-3 py-1 rounded-full border border-blue-100">Total: 0</span>
+        </div>
+        <div class="space-y-4 text-center text-gray-500 py-4">
+          Please configure Data Source URL and Label Field in properties.
+        </div>
+      `;
+      return;
+    }
+
+    // Show loading state
+    el.innerHTML = `
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-bold text-gray-900 m-0">${title}</h3>
+      </div>
+      <div class="flex justify-center items-center py-8">
+        <mat-icon class="animate-spin text-blue-500 text-4xl w-10 h-10">refresh</mat-icon>
+      </div>
+    `;
+
+    try {
+      const response = await fetch(dataSource);
+      const data = await response.json();
+      
+      const items = Array.isArray(data) ? data : (data.features || data.data || data.items || []);
+      
+      const resolvePath = (obj: Record<string, unknown>, path: string) => {
+        return path.split('.').reduce((prev: unknown, curr: string) => {
+          if (prev && typeof prev === 'object' && curr in prev) {
+            return (prev as Record<string, unknown>)[curr];
+          }
+          return undefined;
+        }, obj);
+      };
+      
+      const aggregates: Record<string, number> = {};
+      let total = 0;
+      
+      items.forEach((item: Record<string, unknown>) => {
+        const rawLabel = resolvePath(item, labelField);
+        const label = rawLabel !== undefined && rawLabel !== null ? String(rawLabel) : 'Unknown';
+        
+        let value = 1;
+        if (valueField) {
+          const rawValue = resolvePath(item, valueField);
+          value = Number(rawValue) || 0;
+        }
+        
+        aggregates[label] = (aggregates[label] || 0) + value;
+        total += value;
+      });
+      
+      const maxVal = Math.max(...Object.values(aggregates), 1);
+      
+      let barsHtml = '';
+      const colors = ['bg-blue-600', 'bg-blue-500', 'bg-blue-400', 'bg-blue-300', 'bg-indigo-500', 'bg-indigo-400'];
+      
+      Object.entries(aggregates).forEach(([label, value], index) => {
+        const percentage = (value / maxVal) * 100;
+        const colorClass = colors[index % colors.length];
+        
+        barsHtml += `
+          <div class="flex items-center gap-4">
+            <div class="w-24 text-sm font-bold text-gray-600 truncate" title="${label}">${label}</div>
+            <div class="flex-1 h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div class="h-full ${colorClass} rounded-full" style="width: ${percentage}%"></div>
+            </div>
+            <div class="w-12 text-right text-sm text-gray-600">${value}</div>
+          </div>
+        `;
+      });
+      
+      el.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-bold text-gray-900 m-0">${title}</h3>
+          <span class="bg-blue-50 text-blue-700 text-sm font-medium px-3 py-1 rounded-full border border-blue-100">Total: ${total}</span>
+        </div>
+        <div class="space-y-4">
+          ${barsHtml}
+        </div>
+        <div class="mt-6 pt-4 border-t border-gray-100 text-sm text-gray-500">
+          Benchmark = numero servizi filtrati per ${labelField}.
+        </div>
+      `;
+      
+    } catch (error) {
+      console.error('Error rendering chart:', error);
+      el.innerHTML = `
+        <div class="flex justify-between items-center mb-6">
+          <h3 class="text-lg font-bold text-gray-900 m-0">${title}</h3>
+        </div>
+        <div class="space-y-4 text-center text-red-500 py-4">
+          Failed to load data from ${dataSource}
+        </div>
+      `;
+    }
   }
 }

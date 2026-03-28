@@ -293,6 +293,113 @@ interface NavigatorNode {
               }
             }
 
+            <!-- Chart Settings -->
+            @if (hasChartSettings(el)) {
+              <button (click)="toggleSection('chart')" class="w-full flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors">
+                <span class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Chart Settings</span>
+                <mat-icon class="text-gray-500 text-[18px] w-[18px] h-[18px] leading-[18px] transition-transform" [class.rotate-180]="expandedSections().chart">expand_more</mat-icon>
+              </button>
+              @if (expandedSections().chart) {
+                <div class="p-4 space-y-4 border-b border-gray-100">
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Chart Type</span>
+                    <select 
+                      [ngModel]="el.getAttribute('data-chart-type') || 'bar'" 
+                      (ngModelChange)="updateAttribute('data-chart-type', $event)"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    >
+                      <option value="bar">Bar</option>
+                      <option value="line">Line</option>
+                      <option value="pie">Pie</option>
+                      <option value="gauge">Gauge</option>
+                    </select>
+                  </label>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Data Source URL</span>
+                    <input 
+                      type="text" 
+                      [ngModel]="el.getAttribute('data-datasource') || ''" 
+                      (ngModelChange)="updateAttribute('data-datasource', $event)"
+                      placeholder="https://api.example.com/data"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </label>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Label Field (Discriminant)</span>
+                    <input 
+                      type="text" 
+                      [ngModel]="el.getAttribute('data-label-field') || ''" 
+                      (ngModelChange)="updateAttribute('data-label-field', $event)"
+                      placeholder="e.g. category"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </label>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Value Field (Optional)</span>
+                    <input 
+                      type="text" 
+                      [ngModel]="el.getAttribute('data-value-field') || ''" 
+                      (ngModelChange)="updateAttribute('data-value-field', $event)"
+                      placeholder="e.g. count (leave empty to count rows)"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </label>
+                </div>
+              }
+            }
+
+            <!-- Dymer Chart Settings -->
+            @if (hasDymerChartSettings(el)) {
+              <button (click)="toggleSection('dymerChart')" class="w-full flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors">
+                <span class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Dymer Chart Settings</span>
+                <mat-icon class="text-gray-500 text-[18px] w-[18px] h-[18px] leading-[18px] transition-transform" [class.rotate-180]="expandedSections().dymerChart">expand_more</mat-icon>
+              </button>
+              @if (expandedSections().dymerChart) {
+                <div class="p-4 space-y-4 border-b border-gray-100">
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Chart Title</span>
+                    <input 
+                      type="text" 
+                      [ngModel]="el.getAttribute('data-title') || 'Services benchmark'" 
+                      (ngModelChange)="updateAttribute('data-title', $event)"
+                      placeholder="e.g. Services benchmark"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </label>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Data Source URL</span>
+                    <input 
+                      type="text" 
+                      [ngModel]="el.getAttribute('data-datasource') || ''" 
+                      (ngModelChange)="updateAttribute('data-datasource', $event)"
+                      placeholder="https://api.example.com/data"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </label>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Label Field (Discriminant)</span>
+                    <input 
+                      type="text" 
+                      [ngModel]="el.getAttribute('data-label-field') || ''" 
+                      (ngModelChange)="updateAttribute('data-label-field', $event)"
+                      placeholder="e.g. macro_DBEST"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </label>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Value Field (Optional)</span>
+                    <input 
+                      type="text" 
+                      [ngModel]="el.getAttribute('data-value-field') || ''" 
+                      (ngModelChange)="updateAttribute('data-value-field', $event)"
+                      placeholder="e.g. count (leave empty to count rows)"
+                      class="w-full px-2 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </label>
+                </div>
+              }
+            }
+
             <!-- Typography -->
             <button (click)="toggleSection('typography')" class="w-full flex items-center justify-between p-3 bg-gray-50 border-b border-gray-200 hover:bg-gray-100 transition-colors">
               <span class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Typography</span>
@@ -835,13 +942,15 @@ export class PropertiesComponent {
   expandedSections = signal({
     general: true,
     specific: true,
+    chart: true,
+    dymerChart: true,
     typography: false,
     layout: false,
     background: false,
     dymer: true
   });
 
-  toggleSection(section: 'general' | 'specific' | 'typography' | 'layout' | 'background' | 'dymer') {
+  toggleSection(section: 'general' | 'specific' | 'chart' | 'dymerChart' | 'typography' | 'layout' | 'background' | 'dymer') {
     this.expandedSections.update(s => ({ ...s, [section]: !s[section] }));
   }
 
@@ -859,6 +968,14 @@ export class PropertiesComponent {
       'BUTTON': 'Button Settings'
     };
     return map[el.tagName] || 'Specific Settings';
+  }
+
+  hasChartSettings(el: HTMLElement): boolean {
+    return el.hasAttribute('data-component-chart');
+  }
+
+  hasDymerChartSettings(el: HTMLElement): boolean {
+    return el.hasAttribute('data-component-dymer-chart');
   }
 
   navigatorNodes = computed(() => {
