@@ -129,6 +129,40 @@ interface NavigatorNode {
                     />
                   </label>
                 </div>
+                <div>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Data DCAT Map</span>
+                    <input 
+                      [ngModel]="el.getAttribute('data-dcat-map') || ''" 
+                      (ngModelChange)="updateAttribute('data-dcat-map', $event)"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="e.g. dcat:Dataset"
+                      list="dcat-keys"
+                    />
+                    <datalist id="dcat-keys">
+                      @for (key of dcatKeys; track key) {
+                        <option [value]="key"></option>
+                      }
+                    </datalist>
+                  </label>
+                </div>
+                <div>
+                  <label class="block">
+                    <span class="text-xs text-gray-500 mb-1 block">Data IDS Map</span>
+                    <input 
+                      [ngModel]="el.getAttribute('data-ids-map') || ''" 
+                      (ngModelChange)="updateAttribute('data-ids-map', $event)"
+                      class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                      placeholder="e.g. ids:DataResource"
+                      list="ids-keys"
+                    />
+                    <datalist id="ids-keys">
+                      @for (key of idsKeys; track key) {
+                        <option [value]="key"></option>
+                      }
+                    </datalist>
+                  </label>
+                </div>
                 @if (canEditContent(el)) {
                   <div>
                     <label class="block">
@@ -935,6 +969,79 @@ export class PropertiesComponent {
   isContentEditable = this.builderService.isContentEditable;
   activeTab: 'properties' | 'navigator' = 'properties';
   showHtmlEditor = signal(false);
+
+  dcatKeys: string[] = [
+    'dcat:Catalog',
+    'dcat:Dataset',
+    'dcat:Distribution',
+    'dcat:DataService',
+    'dcat:CatalogRecord',
+    'foaf:Agent',
+    'vcard:Kind',
+    'dct:Standard',
+    'skos:Concept',
+    'skos:ConceptScheme',
+    'dct:title',
+    'dct:description',
+    'dcat:keyword',
+    'dcat:theme',
+    'dct:issued',
+    'dct:modified',
+    'dct:publisher',
+    'dcat:contactPoint',
+    'dcat:distribution',
+    'dcat:dataset',
+    'dct:language',
+    'dct:spatial',
+    'dct:temporal',
+    'dct:identifier',
+    'dcat:accessURL',
+    'dcat:downloadURL',
+    'dcat:byteSize',
+    'dct:format',
+    'dcat:mediaType',
+    'dct:license',
+    'dct:rights',
+    'dct:conformsTo',
+    'foaf:homepage',
+    'foaf:name',
+    'foaf:mbox'
+  ];
+
+  idsKeys: string[] = [
+    'ids:Resource',
+    'ids:DataResource',
+    'ids:TextResource',
+    'ids:AppResource',
+    'ids:Connector',
+    'ids:BaseConnector',
+    'ids:TrustedConnector',
+    'ids:Endpoint',
+    'ids:ContractOffer',
+    'ids:ContractAgreement',
+    'ids:Permission',
+    'ids:Prohibition',
+    'ids:Duty',
+    'ids:Rule',
+    'ids:Artifact',
+    'ids:Representation',
+    'ids:Catalog',
+    'ids:title',
+    'ids:description',
+    'ids:keyword',
+    'ids:version',
+    'ids:created',
+    'ids:modified',
+    'ids:publisher',
+    'ids:sovereign',
+    'ids:endpoint',
+    'ids:contractOffer',
+    'ids:representation',
+    'ids:instance',
+    'ids:byteSize',
+    'ids:fileName',
+    'ids:mediaType'
+  ];
 
   expandedNodes = new Map<HTMLElement, boolean>();
   _refreshTree = signal(0);
