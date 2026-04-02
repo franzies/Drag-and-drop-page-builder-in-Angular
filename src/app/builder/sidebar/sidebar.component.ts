@@ -1,5 +1,6 @@
-import { Component, inject, output } from '@angular/core';
+import { Component, inject, output, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatIconModule } from '@angular/material/icon';
 import { PageService } from '../page.service';
@@ -8,20 +9,40 @@ import { BuilderService } from '../builder.service';
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, DragDropModule, MatIconModule],
+  imports: [CommonModule, FormsModule, DragDropModule, MatIconModule],
   template: `
     <div class="flex flex-col h-full relative">
       
       <!-- Pages Section -->
-      <div class="p-4 border-b border-gray-200 bg-gray-50">
-        <div class="flex items-center justify-between mb-2">
+      <div class="p-4 border-b border-gray-200 bg-gray-50 flex flex-col gap-3">
+        <div class="flex items-center justify-between">
           <h2 class="text-sm font-semibold text-gray-700 uppercase tracking-wider">Pages</h2>
           <button (click)="requestCreatePage.emit()" class="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center">
             <mat-icon class="text-sm mr-1">add</mat-icon> New
           </button>
         </div>
+        
+        <!-- Search Bar -->
+        <div class="relative">
+          <mat-icon class="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-[18px] w-[18px] h-[18px] leading-[18px]">search</mat-icon>
+          <input 
+            type="text" 
+            [(ngModel)]="searchQuery"
+            placeholder="Search pages..." 
+            class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+          >
+          @if (searchQuery()) {
+            <button (click)="searchQuery.set('')" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+              <mat-icon class="text-[16px] w-[16px] h-[16px] leading-[16px]">close</mat-icon>
+            </button>
+          }
+        </div>
+
         <div class="space-y-1 max-h-40 overflow-y-auto">
-          @for (page of pageService.pages(); track page.id) {
+          @if (filteredPages().length === 0) {
+            <div class="text-xs text-gray-500 text-center py-2 italic">No pages found</div>
+          }
+          @for (page of filteredPages(); track page.id) {
             <div 
               class="flex items-center justify-between p-2 rounded-md cursor-pointer hover:bg-white hover:shadow-sm transition-all group"
               [class.bg-blue-50]="pageService.currentPageId() === page.id"
@@ -171,6 +192,20 @@ export class SidebarComponent {
   requestAttachFile = output<string>();
 
   activeTab: 'components' | 'sections' = 'components';
+  
+  searchQuery = signal('');
+  
+  filteredPages = computed(() => {
+    const query = (this.searchQuery() || '').toLowerCase().trim();
+    const pages = this.pageService.pages();
+    if (!query) {
+      return pages;
+    }
+    return pages.filter(page => 
+      (page.name || '').toLowerCase().includes(query) || 
+      (page.slug || '').toLowerCase().includes(query)
+    );
+  });
 
   categories = [
     // ... existing categories ...

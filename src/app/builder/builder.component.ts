@@ -150,39 +150,51 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
 
         <!-- Canvas Area -->
         <div class="flex-1 overflow-hidden relative bg-gray-50 flex dark:bg-gray-800">
-          <div 
-            #scrollContainer
-            class="flex-1 overflow-auto p-8 flex justify-center bg-gray-100/50 dark:bg-gray-900/50" 
-            [class.p-0]="previewMode" 
-            [class.bg-white]="previewMode"
-            [class.cursor-grab]="isPanMode && !isDragging"
-            [class.cursor-grabbing]="isPanMode && isDragging"
-            [class.pointer-events-none]="isResizingSidebar || isResizingRightPanel"
-            (mousedown)="onPanStart($event)"
-            (mousemove)="onPanMove($event)"
-            (mouseup)="onPanEnd()"
-            (mouseleave)="onPanEnd()"
-          >
-            <div 
-              class="transition-all duration-300 ease-in-out bg-white shadow-sm rounded-lg dark:bg-black origin-top"
-              [style.width]="getCanvasWidth()"
-              [style.min-height]="previewMode ? '100%' : '800px'"
-              [style.transform]="'scale(' + (zoomLevel / 100) + ')'"
-              [class.shadow-none]="previewMode" 
-              [class.rounded-none]="previewMode"
-              [class.pointer-events-none]="isPanMode"
-            >
-               <app-canvas class="w-full block"></app-canvas>
-            </div>
-          </div>
           
-          <!-- Code Editor Overlay/Panel -->
-          @if (builderService.showCodeEditor()) {
-            <app-code-editor class="w-1/2 border-l border-gray-200 bg-white h-full absolute right-0 top-0 bottom-0 shadow-xl z-20 dark:bg-gray-900 dark:border-gray-700"></app-code-editor>
-          }
+          <div class="flex-1 flex flex-col overflow-hidden relative">
+            <div 
+              #scrollContainer
+              class="flex-1 overflow-auto p-8 flex justify-center bg-gray-100/50 dark:bg-gray-900/50" 
+              [class.p-0]="previewMode" 
+              [class.bg-white]="previewMode"
+              [class.cursor-grab]="isPanMode && !isDragging"
+              [class.cursor-grabbing]="isPanMode && isDragging"
+              [class.pointer-events-none]="isResizingSidebar || isResizingRightPanel"
+              (mousedown)="onPanStart($event)"
+              (mousemove)="onPanMove($event)"
+              (mouseup)="onPanEnd()"
+              (mouseleave)="onPanEnd()"
+            >
+              <div 
+                class="transition-all duration-300 ease-in-out bg-white shadow-sm rounded-lg dark:bg-black origin-top"
+                [style.width]="getCanvasWidth()"
+                [style.min-height]="previewMode ? '100%' : '800px'"
+                [style.transform]="'scale(' + (zoomLevel / 100) + ')'"
+                [class.shadow-none]="previewMode" 
+                [class.rounded-none]="previewMode"
+                [class.pointer-events-none]="isPanMode"
+              >
+                 <app-canvas class="w-full block"></app-canvas>
+              </div>
+            </div>
+            
+            <!-- Code Editor Panel (Bottom 50%) -->
+            @if (builderService.showCodeEditor()) {
+              <div class="h-1/2 border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] z-20 flex flex-col bg-white dark:bg-gray-900 dark:border-gray-700">
+                <app-code-editor class="flex-1 overflow-hidden"></app-code-editor>
+              </div>
+            } @else {
+              <!-- Bottom Bar with Code Editor Button -->
+              <div class="h-10 bg-white border-t border-gray-200 flex items-center px-4 justify-center flex-shrink-0 dark:bg-gray-900 dark:border-gray-700">
+                <button (click)="toggleCode()" class="text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white flex items-center gap-2">
+                  <mat-icon class="text-[18px] w-[18px] h-[18px] leading-[18px]">code</mat-icon> Code Editor
+                </button>
+              </div>
+            }
+          </div>
 
           <!-- Right Panel (Properties + AI Chat) -->
-          @if (!previewMode) {
+          @if (!previewMode && !builderService.showCodeEditor()) {
             <!-- Right Panel Resizer -->
             <div 
               class="w-1 cursor-col-resize bg-gray-200 hover:bg-blue-500 z-20 dark:bg-gray-700 dark:hover:bg-blue-500 transition-colors"
@@ -525,6 +537,10 @@ export class BuilderComponent implements OnInit {
       import('codemirror/mode/javascript/javascript');
       // @ts-expect-error - CodeMirror mode imports do not have type definitions
       import('codemirror/mode/css/css');
+      // @ts-expect-error - CodeMirror mode imports do not have type definitions
+      import('codemirror/mode/xml/xml');
+      // @ts-expect-error - CodeMirror mode imports do not have type definitions
+      import('codemirror/mode/htmlmixed/htmlmixed');
     }
   }
   
