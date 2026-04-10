@@ -34,7 +34,7 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
     CodemirrorModule
   ],
   template: `
-    <div class="flex h-screen bg-gray-100 overflow-hidden" cdkDropListGroup [class.dark]="isDarkMode" [class.select-none]="isResizingSidebar || isResizingRightPanel">
+    <div class="flex h-screen bg-gray-100 overflow-hidden" cdkDropListGroup [class.dark]="isDarkMode" [class.select-none]="isResizingSidebar">
       <!-- Sidebar -->
       <app-sidebar 
         class="bg-white border-r border-gray-200 flex-shrink-0 dark:bg-gray-900 dark:border-gray-700"
@@ -159,7 +159,7 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
               [class.bg-white]="previewMode"
               [class.cursor-grab]="isPanMode && !isDragging"
               [class.cursor-grabbing]="isPanMode && isDragging"
-              [class.pointer-events-none]="isResizingSidebar || isResizingRightPanel"
+              [class.pointer-events-none]="isResizingSidebar"
               (mousedown)="onPanStart($event)"
               (mousemove)="onPanMove($event)"
               (mouseup)="onPanEnd()"
@@ -193,22 +193,17 @@ import { PLATFORM_ID, OnInit } from '@angular/core';
             }
           </div>
 
-          <!-- Right Panel (Properties + AI Chat) -->
-          @if (!previewMode && !builderService.showCodeEditor()) {
-            <!-- Right Panel Resizer -->
-            <div 
-              class="w-1 cursor-col-resize bg-gray-200 hover:bg-blue-500 z-20 dark:bg-gray-700 dark:hover:bg-blue-500 transition-colors"
-              [class.bg-blue-500]="isResizingRightPanel"
-              (mousedown)="startResizeRightPanel($event)"
-            ></div>
-            <div 
-              class="bg-white border-l border-gray-200 flex flex-col flex-shrink-0 z-10 dark:bg-gray-900 dark:border-gray-700"
-              [style.width.px]="rightPanelWidth"
-            >
-              <app-properties class="flex-1 overflow-hidden border-b border-gray-200 dark:border-gray-700"></app-properties>
-              <app-ai-chat class="h-[40%] flex-shrink-0"></app-ai-chat>
-            </div>
-          }
+          <!-- Floating AI Chat -->
+          <div class="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+            @if (showAiChat) {
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 w-96 h-[500px] mb-4 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5">
+                <app-ai-chat class="flex-1 overflow-hidden"></app-ai-chat>
+              </div>
+            }
+            <button (click)="showAiChat = !showAiChat" class="bg-purple-600 hover:bg-purple-700 text-white rounded-full p-4 shadow-lg flex items-center justify-center transition-transform hover:scale-105">
+              <mat-icon>{{ showAiChat ? 'close' : 'auto_awesome' }}</mat-icon>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -546,34 +541,23 @@ export class BuilderComponent implements OnInit {
   
   // Resizing state
   sidebarWidth = 256; // 16rem (w-64)
-  rightPanelWidth = 320; // 20rem (w-80)
   isResizingSidebar = false;
-  isResizingRightPanel = false;
 
   startResizeSidebar(event: MouseEvent) {
     event.preventDefault();
     this.isResizingSidebar = true;
   }
 
-  startResizeRightPanel(event: MouseEvent) {
-    event.preventDefault();
-    this.isResizingRightPanel = true;
-  }
-
   @HostListener('window:mousemove', ['$event'])
   onMouseMove(event: MouseEvent) {
     if (this.isResizingSidebar) {
       this.sidebarWidth = Math.max(200, Math.min(event.clientX, 600));
-    } else if (this.isResizingRightPanel) {
-      const newWidth = window.innerWidth - event.clientX;
-      this.rightPanelWidth = Math.max(250, Math.min(newWidth, 800));
     }
   }
 
   @HostListener('window:mouseup')
   onMouseUp() {
     this.isResizingSidebar = false;
-    this.isResizingRightPanel = false;
   }
 
   // Breakpoint state
@@ -581,6 +565,9 @@ export class BuilderComponent implements OnInit {
   
   // Dark mode state
   isDarkMode = false;
+
+  // AI Chat state
+  showAiChat = false;
 
   // Zoom & Pan state
   zoomLevel = 100;

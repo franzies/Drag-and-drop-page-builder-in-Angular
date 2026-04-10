@@ -1,4 +1,4 @@
-import { Component, inject, computed, signal } from '@angular/core';
+import { Component, inject, computed, signal, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { BuilderService } from '../builder.service';
@@ -20,31 +20,6 @@ interface NavigatorNode {
   imports: [CommonModule, FormsModule, MatIconModule],
   template: `
     <div class="flex flex-col h-full bg-white">
-      <div class="flex border-b border-gray-200 bg-gray-50">
-        <button 
-          (click)="activeTab = 'properties'" 
-          class="flex-1 py-3 text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-colors"
-          [class.border-blue-500]="activeTab === 'properties'"
-          [class.text-blue-600]="activeTab === 'properties'"
-          [class.border-transparent]="activeTab !== 'properties'"
-          [class.text-gray-500]="activeTab !== 'properties'"
-        >
-          <mat-icon class="text-sm">tune</mat-icon>
-          Properties
-        </button>
-        <button 
-          (click)="activeTab = 'navigator'" 
-          class="flex-1 py-3 text-xs font-semibold uppercase tracking-wider flex items-center justify-center gap-2 border-b-2 transition-colors"
-          [class.border-blue-500]="activeTab === 'navigator'"
-          [class.text-blue-600]="activeTab === 'navigator'"
-          [class.border-transparent]="activeTab !== 'navigator'"
-          [class.text-gray-500]="activeTab !== 'navigator'"
-        >
-          <mat-icon class="text-sm">layers</mat-icon>
-          Navigator
-        </button>
-      </div>
-
       @if (activeTab === 'properties') {
         @if (selectedElement(); as el) {
           <div class="flex-1 overflow-y-auto pb-10">
@@ -967,7 +942,7 @@ export class PropertiesComponent {
   builderService = inject(BuilderService);
   selectedElement = this.builderService.selectedElement;
   isContentEditable = this.builderService.isContentEditable;
-  activeTab: 'properties' | 'navigator' = 'properties';
+  @Input() activeTab: 'properties' | 'navigator' = 'properties';
   showHtmlEditor = signal(false);
 
   dcatKeys: string[] = [

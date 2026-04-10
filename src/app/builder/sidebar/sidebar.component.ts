@@ -5,11 +5,12 @@ import { DragDropModule } from '@angular/cdk/drag-drop';
 import { MatIconModule } from '@angular/material/icon';
 import { PageService } from '../page.service';
 import { BuilderService } from '../builder.service';
+import { PropertiesComponent } from '../properties/properties.component';
 
 @Component({
   selector: 'app-sidebar',
   standalone: true,
-  imports: [CommonModule, FormsModule, DragDropModule, MatIconModule],
+  imports: [CommonModule, FormsModule, DragDropModule, MatIconModule, PropertiesComponent],
   template: `
     <div class="flex flex-col h-full relative">
       
@@ -76,111 +77,141 @@ import { BuilderService } from '../builder.service';
       <div class="flex border-b border-gray-200 bg-white">
         <button 
           (click)="setActiveTab('components')"
-          class="flex-1 py-3 text-sm font-medium text-center border-b-2 transition-colors outline-none"
+          title="Components"
+          class="flex-1 py-3 flex justify-center items-center border-b-2 transition-colors outline-none"
           [class.border-blue-500]="activeTab === 'components'"
           [class.text-blue-600]="activeTab === 'components'"
           [class.border-transparent]="activeTab !== 'components'"
           [class.text-gray-500]="activeTab !== 'components'"
           [class.hover:text-gray-700]="activeTab !== 'components'"
         >
-          Components
+          <mat-icon>widgets</mat-icon>
         </button>
         <button 
           (click)="setActiveTab('sections')"
-          class="flex-1 py-3 text-sm font-medium text-center border-b-2 transition-colors outline-none"
+          title="Sections"
+          class="flex-1 py-3 flex justify-center items-center border-b-2 transition-colors outline-none"
           [class.border-blue-500]="activeTab === 'sections'"
           [class.text-blue-600]="activeTab === 'sections'"
           [class.border-transparent]="activeTab !== 'sections'"
           [class.text-gray-500]="activeTab !== 'sections'"
           [class.hover:text-gray-700]="activeTab !== 'sections'"
         >
-          Sections
+          <mat-icon>view_quilt</mat-icon>
+        </button>
+        <button 
+          (click)="setActiveTab('properties')"
+          title="Properties"
+          class="flex-1 py-3 flex justify-center items-center border-b-2 transition-colors outline-none"
+          [class.border-blue-500]="activeTab === 'properties'"
+          [class.text-blue-600]="activeTab === 'properties'"
+          [class.border-transparent]="activeTab !== 'properties'"
+          [class.text-gray-500]="activeTab !== 'properties'"
+          [class.hover:text-gray-700]="activeTab !== 'properties'"
+        >
+          <mat-icon>tune</mat-icon>
+        </button>
+        <button 
+          (click)="setActiveTab('navigator')"
+          title="Navigator"
+          class="flex-1 py-3 flex justify-center items-center border-b-2 transition-colors outline-none"
+          [class.border-blue-500]="activeTab === 'navigator'"
+          [class.text-blue-600]="activeTab === 'navigator'"
+          [class.border-transparent]="activeTab !== 'navigator'"
+          [class.text-gray-500]="activeTab !== 'navigator'"
+          [class.hover:text-gray-700]="activeTab !== 'navigator'"
+        >
+          <mat-icon>layers</mat-icon>
         </button>
       </div>
       
-      <div class="flex-1 overflow-y-auto p-4 space-y-2" cdkDropList [cdkDropListConnectedTo]="[]">
-        @if (activeTab === 'components') {
-          @for (category of categories; track category.name) {
-            <div class="border border-gray-200 rounded-lg overflow-hidden">
-              <button 
-                (click)="toggleCategory(category.name)"
-                class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-              >
-                <span class="text-xs font-medium text-gray-700 uppercase">{{ category.name }}</span>
-                <mat-icon class="text-gray-400 text-sm transition-transform duration-200" [class.rotate-180]="!category.expanded">expand_more</mat-icon>
-              </button>
-              
-              @if (category.expanded) {
-                <div class="p-3 bg-white grid grid-cols-2 gap-3 border-t border-gray-200">
-                  @for (item of category.items; track item.name) {
-                    <div 
-                      cdkDrag 
-                      [cdkDragData]="item" 
-                      class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-white border border-gray-200 hover:border-blue-400 rounded-lg cursor-move transition-all shadow-sm hover:shadow-md group"
-                    >
-                      <mat-icon class="text-gray-400 group-hover:text-blue-500 mb-2">{{ item.icon }}</mat-icon>
-                      <span class="text-xs text-gray-600 font-medium text-center">{{ item.name }}</span>
-                      
-                      <!-- Drag Preview -->
-                      <div *cdkDragPreview class="bg-white p-4 rounded-lg shadow-xl border border-blue-500 opacity-90 flex items-center gap-2 z-50">
-                        <mat-icon class="text-blue-500">{{ item.icon }}</mat-icon>
-                        <span class="font-medium">{{ item.name }}</span>
-                      </div>
-
-                      <!-- Drag Placeholder -->
-                      <div *cdkDragPlaceholder class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
-                        <mat-icon class="text-gray-400">{{ item.icon }}</mat-icon>
+      @if (activeTab === 'components' || activeTab === 'sections') {
+        <div class="flex-1 overflow-y-auto p-4 space-y-2" cdkDropList [cdkDropListConnectedTo]="[]">
+          @if (activeTab === 'components') {
+            @for (category of categories; track category.name) {
+              <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <button 
+                  (click)="toggleCategory(category.name)"
+                  class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                >
+                  <span class="text-xs font-medium text-gray-700 uppercase">{{ category.name }}</span>
+                  <mat-icon class="text-gray-400 text-sm transition-transform duration-200" [class.rotate-180]="!category.expanded">expand_more</mat-icon>
+                </button>
+                
+                @if (category.expanded) {
+                  <div class="p-3 bg-white grid grid-cols-2 gap-3 border-t border-gray-200">
+                    @for (item of category.items; track item.name) {
+                      <div 
+                        cdkDrag 
+                        [cdkDragData]="item" 
+                        class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-white border border-gray-200 hover:border-blue-400 rounded-lg cursor-move transition-all shadow-sm hover:shadow-md group"
+                      >
+                        <mat-icon class="text-gray-400 group-hover:text-blue-500 mb-2">{{ item.icon }}</mat-icon>
                         <span class="text-xs text-gray-600 font-medium text-center">{{ item.name }}</span>
-                      </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-          }
-        } @else {
-          @for (section of sections; track section.name) {
-            <div class="border border-gray-200 rounded-lg overflow-hidden">
-              <button 
-                (click)="toggleSection(section.name)"
-                class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
-              >
-                <span class="text-xs font-medium text-gray-700 uppercase">{{ section.name }}</span>
-                <mat-icon class="text-gray-400 text-sm transition-transform duration-200" [class.rotate-180]="!section.expanded">expand_more</mat-icon>
-              </button>
-              
-              @if (section.expanded) {
-                <div class="p-3 bg-white grid grid-cols-1 gap-3 border-t border-gray-200">
-                  @for (item of section.items; track item.name) {
-                    <div 
-                      cdkDrag 
-                      [cdkDragData]="item" 
-                      class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-white border border-gray-200 hover:border-blue-400 rounded-lg cursor-move transition-all shadow-sm hover:shadow-md group"
-                    >
-                      <div class="flex items-center gap-3 w-full">
-                        <mat-icon class="text-gray-400 group-hover:text-blue-500">{{ item.icon }}</mat-icon>
-                        <span class="text-xs text-gray-600 font-medium">{{ item.name }}</span>
-                      </div>
-                      
-                      <!-- Drag Preview -->
-                      <div *cdkDragPreview class="bg-white p-4 rounded-lg shadow-xl border border-blue-500 opacity-90 flex items-center gap-2 z-50">
-                        <mat-icon class="text-blue-500">{{ item.icon }}</mat-icon>
-                        <span class="font-medium">{{ item.name }}</span>
-                      </div>
+                        
+                        <!-- Drag Preview -->
+                        <div *cdkDragPreview class="bg-white p-4 rounded-lg shadow-xl border border-blue-500 opacity-90 flex items-center gap-2 z-50">
+                          <mat-icon class="text-blue-500">{{ item.icon }}</mat-icon>
+                          <span class="font-medium">{{ item.name }}</span>
+                        </div>
 
-                      <!-- Drag Placeholder -->
-                      <div *cdkDragPlaceholder class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
-                        <mat-icon class="text-gray-400">{{ item.icon }}</mat-icon>
-                        <span class="text-xs text-gray-600 font-medium text-center">{{ item.name }}</span>
+                        <!-- Drag Placeholder -->
+                        <div *cdkDragPlaceholder class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
+                          <mat-icon class="text-gray-400">{{ item.icon }}</mat-icon>
+                          <span class="text-xs text-gray-600 font-medium text-center">{{ item.name }}</span>
+                        </div>
                       </div>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          } @else {
+            @for (section of sections; track section.name) {
+              <div class="border border-gray-200 rounded-lg overflow-hidden">
+                <button 
+                  (click)="toggleSection(section.name)"
+                  class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+                >
+                  <span class="text-xs font-medium text-gray-700 uppercase">{{ section.name }}</span>
+                  <mat-icon class="text-gray-400 text-sm transition-transform duration-200" [class.rotate-180]="!section.expanded">expand_more</mat-icon>
+                </button>
+                
+                @if (section.expanded) {
+                  <div class="p-3 bg-white grid grid-cols-1 gap-3 border-t border-gray-200">
+                    @for (item of section.items; track item.name) {
+                      <div 
+                        cdkDrag 
+                        [cdkDragData]="item" 
+                        class="flex flex-col items-center justify-center p-3 bg-gray-50 hover:bg-white border border-gray-200 hover:border-blue-400 rounded-lg cursor-move transition-all shadow-sm hover:shadow-md group"
+                      >
+                        <div class="flex items-center gap-3 w-full">
+                          <mat-icon class="text-gray-400 group-hover:text-blue-500">{{ item.icon }}</mat-icon>
+                          <span class="text-xs text-gray-600 font-medium">{{ item.name }}</span>
+                        </div>
+                        
+                        <!-- Drag Preview -->
+                        <div *cdkDragPreview class="bg-white p-4 rounded-lg shadow-xl border border-blue-500 opacity-90 flex items-center gap-2 z-50">
+                          <mat-icon class="text-blue-500">{{ item.icon }}</mat-icon>
+                          <span class="font-medium">{{ item.name }}</span>
+                        </div>
+
+                        <!-- Drag Placeholder -->
+                        <div *cdkDragPlaceholder class="flex flex-col items-center justify-center p-3 bg-gray-50 border border-gray-200 rounded-lg opacity-50">
+                          <mat-icon class="text-gray-400">{{ item.icon }}</mat-icon>
+                          <span class="text-xs text-gray-600 font-medium text-center">{{ item.name }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
           }
-        }
-      </div>
+        </div>
+      } @else if (activeTab === 'properties' || activeTab === 'navigator') {
+        <app-properties [activeTab]="activeTab" class="flex-1 overflow-hidden block"></app-properties>
+      }
     </div>
   `
 })
@@ -191,7 +222,7 @@ export class SidebarComponent {
   requestCreatePage = output<void>();
   requestAttachFile = output<string>();
 
-  activeTab: 'components' | 'sections' = 'components';
+  activeTab: 'components' | 'sections' | 'properties' | 'navigator' = 'components';
   
   searchQuery = signal('');
   
@@ -565,7 +596,7 @@ export class SidebarComponent {
     }
   }
 
-  setActiveTab(tab: 'components' | 'sections') {
+  setActiveTab(tab: 'components' | 'sections' | 'properties' | 'navigator') {
     this.activeTab = tab;
   }
 
